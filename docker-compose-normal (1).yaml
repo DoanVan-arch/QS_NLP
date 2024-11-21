@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+  target:
+    image: web-target
+    container_name: web-target
+    volumes:
+      - ./captures:/capture
+    ports:
+      - "13000:13000"
+      - "80:80"
+    networks:
+      - test_network
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    privileged: true
+
+networks:
+  test_network:
+    driver: bridge

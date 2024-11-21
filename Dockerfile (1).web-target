@@ -1,0 +1,38 @@
+# Stage 1: Build React app with Node.js and Yarn
+FROM node:16 AS build
+
+# Install Git (necessary for cloning dependencies)
+RUN apt-get update && apt-get install -y git
+
+# Set working directory
+WORKDIR /app
+
+# Clone the repository
+RUN git clone https://github.com/altence/lightence-ant-design-react-template.git .
+
+# Use existing Yarn installation to install project dependencies
+RUN yarn install
+
+# Build the React app for production
+RUN yarn build
+
+# Stage 2: Prepare Nginx server and Tshark for packet capture
+FROM nginx:alpine
+
+# Install Tshark
+RUN apk update && apk add --no-cache tshark && rm -rf /var/cache/apk/*
+
+# Copy the built app from the previous stage
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Create directory for captured packets
+RUN mkdir -p /capture
+
+# Configure Nginx to serve on port 13000
+RUN sed -i 's/listen       80;/listen       13000;/' /etc/nginx/conf.d/default.conf
+
+# Expose port 13000
+EXPOSE 13000
+
+# Start both Nginx server and Tshark
+CMD sh -c "nginx -g 'daemon off;' & tshark -i eth0 -w /capture/normal_network.pcap"
